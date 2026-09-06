@@ -7,10 +7,9 @@ app = FastAPI(
     description="API for detecting cheating in online quizzes using WebSockets and Rule Engines."
 )
 
-# Part 3.4 - Enabling Cross-Origin Resource Sharing (CORS)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, restrict this to your frontend URL
+    allow_origins=["*"], 
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

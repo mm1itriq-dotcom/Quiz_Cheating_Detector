@@ -1,8 +1,9 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+﻿from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from app.schemas import SubmissionCreate
 from app.rule_engine import evaluate_submission
 from app.database import engine
-from app.models import submissions, cheating_flags
+from app.models import submissions, cheating_flags, students, quizzes
+from sqlalchemy import select
 from sqlalchemy import insert
 import json
 import uuid
@@ -35,10 +36,8 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_text()
             payload = json.loads(data)
             
-            # 1. Parse incoming data
             sub = SubmissionCreate(**payload)
             
-            # 2. Save submission to DB
             sub_id = uuid.uuid4()
             with engine.connect() as conn:
                 conn.execute(
@@ -54,10 +53,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 )
                 conn.commit()
 
-            # 3. Run Rule Engine
             flags = evaluate_submission(sub)
             
-            # 4. Save any flags to DB
             if flags:
                 with engine.connect() as conn:
                     for flag in flags:
@@ -73,14 +70,34 @@ async def websocket_endpoint(websocket: WebSocket):
                         )
                     conn.commit()
 
+            # Fetch student and quiz names
+            student_name = 'Unknown'
+            quiz_title = 'Unknown Quiz'
+            quiz_title = 'Unknown Quiz'
+            with engine.connect() as conn:
+                student = conn.execute(select(students).where(students.c.id == sub.student_id)).first()
+                if student:
+                    student_name = f'{student.first_name} {student.last_name}'
+
+                quiz = conn.execute(select(quizzes).where(quizzes.c.id == sub.quiz_id)).first()
+                if quiz:
+                    quiz_title = quiz.title
+                quiz_row = conn.execute(select(quizzes).where(quizzes.c.id == sub.quiz_id)).first()
+                if quiz_row:
+                    quiz_title = quiz_row.title
+
             # 5. Broadcast live update to React Dashboard
             await manager.broadcast({
                 "type": "NEW_SUBMISSION",
-                "submission": sub.model_dump(mode='json'),
-                "flags_generated": [f.model_dump(mode='json') for f in flags]
+                "submission": {**sub.model_dump(mode='json'), "student_name": student_name, "quiz_title": quiz_title},
+                "flags_generated": [{**f.model_dump(mode='json'), "student_name": student_name, "quiz_title": quiz_title} for f in flags]
             })
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except Exception as e:
         print(f"WebSocket Error: {e}")
+
+
+
+

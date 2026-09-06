@@ -1,12 +1,8 @@
-import os
-from sqlalchemy import create_engine, MetaData
-from dotenv import load_dotenv
+﻿from sqlalchemy import create_engine, MetaData
 
-load_dotenv()
-
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL is not set in the environment.")
+DATABASE_URL = "postgresql://postgres:123456@localhost:5432/quiz_detector"
 
 engine = create_engine(DATABASE_URL, echo=True)
 metadata = MetaData()
+
+

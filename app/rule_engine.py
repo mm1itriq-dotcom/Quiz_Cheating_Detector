@@ -7,7 +7,7 @@ from sqlalchemy import select
 def evaluate_submission(sub: SubmissionCreate) -> list[CheatingFlagCreate]:
     flags = []
     
-    # Rule 1: Too Fast (under 2 seconds)
+    #  Too Fast (under 2 seconds)
     if sub.time_taken_seconds < 2.0:
         flags.append(CheatingFlagCreate(
             student_id=sub.student_id,
@@ -17,7 +17,6 @@ def evaluate_submission(sub: SubmissionCreate) -> list[CheatingFlagCreate]:
             description=f"Answered in {sub.time_taken_seconds}s (too fast to read)"
         ))
 
-    # Rule 2: Collusion
     # Check if another student gave the exact same wrong answer for this question.
     if not sub.is_correct:
         with engine.connect() as conn:

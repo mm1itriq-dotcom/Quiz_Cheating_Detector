@@ -1,32 +1,34 @@
-import asyncio
+﻿import asyncio
 import websockets
 import json
 import time
+import random
 from sqlalchemy import create_engine, select
-from dotenv import load_dotenv
-import os
 
-load_dotenv()
 from app.models import students, quizzes
 
 async def simulate_student():
-    db_url = os.getenv("DATABASE_URL")
+    db_url = "postgresql://postgres:123456@localhost:5432/quiz_detector"
     engine = create_engine(db_url)
     
     with engine.connect() as conn:
-        student = conn.execute(select(students)).first()
-        quiz = conn.execute(select(quizzes)).first()
+        all_students = conn.execute(select(students)).fetchall()
+        all_quizzes = conn.execute(select(quizzes)).fetchall()
         
-    if not student or not quiz:
+    if not all_students or not all_quizzes:
         print("\n?? ERROR: You must create at least one Student and one Quiz via the Admin page first!\n")
         return
+
+    # Pick a random student and random quiz!
+    student = random.choice(all_students)
+    quiz = random.choice(all_quizzes)
 
     student_id = str(student.id)
     quiz_id = str(quiz.id)
     
     uri = "ws://localhost:8000/ws/stream"
     async with websockets.connect(uri) as websocket:
-        print(f"? Connected! Simulating student: {student.first_name} {student.last_name}")
+        print(f"? Connected! Randomly picked student: {student.first_name} {student.last_name}")
         
         # 1. Normal Answer
         print("1?? Sending a normal answer... (15.5 seconds)")
@@ -57,3 +59,6 @@ async def simulate_student():
 
 if __name__ == "__main__":
     asyncio.run(simulate_student())
+
+
+

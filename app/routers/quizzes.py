@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+﻿from fastapi import APIRouter, status
 from pydantic import BaseModel, UUID4
 from app.database import engine
 from app.models import quizzes
@@ -33,3 +33,4 @@ def create_quiz(quiz: QuizCreate):
         )
         conn.commit()
         return {**quiz.model_dump(), "id": new_id}
+

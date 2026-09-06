@@ -1,39 +1,42 @@
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+﻿import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import Dashboard from './Dashboard';
 import Admin from './Admin';
+import Sidebar from './components/Sidebar';
 
-function Sidebar() {
-  const location = useLocation();
-  const linkClass = (path) => `block w-full text-left px-4 py-2 rounded-lg mb-2 transition-colors ${location.pathname === path ? 'bg-slate-700 text-cyan-400 font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`;
+export default function App() {
+  const [submissions, setSubmissions] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [wsStatus, setWsStatus] = useState('Connecting...');
+  const [wsIcon, setWsIcon] = useState('sync');
 
-  return (
-    <div className="w-64 h-screen bg-slate-900 border-r border-slate-800 p-6 flex flex-col">
-      <h1 className="text-2xl font-black text-white mb-8 tracking-tight flex items-center">
-        <span className="text-cyan-500 mr-2">?</span> QuizGuard
-      </h1>
-      <nav className="flex-1">
-        <Link to="/" className={linkClass('/')}>
-          ?? Dashboard (Live)
-        </Link>
-        <Link to="/admin" className={linkClass('/admin')}>
-          ?? Admin Setup
-        </Link>
-      </nav>
-      <div className="mt-auto pt-4 border-t border-slate-800 text-sm text-slate-500">
-        Admin: Logged In
-      </div>
-    </div>
-  );
-}
+  useEffect(() => {
+    const ws = new WebSocket('ws://localhost:8000/ws/stream');
+    
+    ws.onopen = () => { setWsStatus('Live'); setWsIcon('wifi'); };
+    ws.onclose = () => { setWsStatus('Disconnected'); setWsIcon('wifi_off'); };
+    ws.onerror = () => { setWsStatus('Error'); setWsIcon('error'); };
+    
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'NEW_SUBMISSION') {
+        setSubmissions(prev => [data.submission, ...prev].slice(0, 50)); 
+        if (data.flags_generated && data.flags_generated.length > 0) {
+           setAlerts(prev => [...data.flags_generated, ...prev].slice(0, 20));
+        }
+      }
+    };
+    
+    return () => ws.close();
+  }, []);
 
-function App() {
   return (
     <Router>
       <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
         <Sidebar />
         <main className="flex-1 overflow-y-auto relative">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<Dashboard submissions={submissions} alerts={alerts} wsStatus={wsStatus} wsIcon={wsIcon} />} />
             <Route path="/admin" element={<Admin />} />
           </Routes>
         </main>
@@ -41,4 +44,3 @@ function App() {
     </Router>
   );
 }
-export default App;

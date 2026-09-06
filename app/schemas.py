@@ -1,6 +1,4 @@
-from pydantic import BaseModel, UUID4
-from datetime import datetime
-from typing import Optional
+﻿from pydantic import BaseModel, UUID4
 
 class SubmissionCreate(BaseModel):
     student_id: UUID4
@@ -16,3 +14,4 @@ class CheatingFlagCreate(BaseModel):
     rule_triggered: str
     severity_score: int
     description: str
+
