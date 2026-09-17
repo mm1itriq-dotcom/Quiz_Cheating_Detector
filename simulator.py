@@ -1,14 +1,18 @@
-﻿import asyncio
+import os
+import asyncio
 import websockets
 import json
 import time
 import random
 from sqlalchemy import create_engine, select
+from dotenv import load_dotenv
 
 from app.models import students, quizzes
 
+load_dotenv()
+
 async def simulate_student():
-    db_url = "postgresql://postgres:123456@localhost:5432/quiz_detector"
+    db_url = os.getenv("DATABASE_URL", "postgresql://postgres:YOUR_PASSWORD@localhost:5432/quiz_detector")
     engine = create_engine(db_url)
     
     with engine.connect() as conn:
